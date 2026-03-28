@@ -5,6 +5,8 @@ class Wallpapir < Formula
   sha256 "09fb1d59bbf6cca0fa80670ec83073592e1f8232f6ef00f29da4ff484fedfbcb"
   license "MIT"
 
+  depends_on "oven-sh/bun/bun" => :runtime
+
   def install
     # Install all files to libexec
     libexec.install Dir["*"]
@@ -19,9 +21,6 @@ class Wallpapir < Formula
   end
 
   test do
-    # Simple functionality test
-    output = shell_output("#{bin}/wallpapir --help 2>&1 || true")
-    # As long as it doesn't crash fatally, it's working
-    assert !output.empty? || true
+    assert_match "Generate beautiful", shell_output("#{bin}/wallpapir --help 2>&1")
   end
 end
