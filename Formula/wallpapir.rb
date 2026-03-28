@@ -5,8 +5,6 @@ class Wallpapir < Formula
   sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
   license "MIT"
 
-  depends_on "bun"
-
   def install
     # Install all files to libexec
     libexec.install Dir["*"]
@@ -14,7 +12,7 @@ class Wallpapir < Formula
     # Create wrapper script that calls bun
     (bin/"wallpapir").write <<~EOS
       #!/bin/bash
-      exec "#{Formula["bun"].opt_bin}/bun" "#{libexec}/gradient.ts" "$@"
+      exec bun "#{libexec}/gradient.ts" "$@"
     EOS
     
     (bin/"wallpapir").chmod 0755
