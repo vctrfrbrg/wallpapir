@@ -50,7 +50,34 @@ function generateFilenameFromParams(color1: string | undefined, color2: string |
  */
 function parseArgs() {
   const argv = Bun.argv.slice(2); // Remove 'bun' and script name
-  
+
+  if (argv.includes('--help') || argv.includes('-h')) {
+    console.log(`
+wallpapir — Generate beautiful 4K gradient wallpapers from the terminal
+
+USAGE
+  wallpapir [color1] [color2] [type] [x] [y] [--output path]
+
+ARGUMENTS
+  color1       Start color — named (e.g. black) or hex (e.g. #ff0000). Defaults to random.
+  color2       End color — same format. Defaults to random.
+  type         Gradient type: linear, radial, conic. Defaults to linear.
+  x, y         Direction/center as 0–1 fractions. Defaults to random.
+  --output     Custom output path (e.g. --output ~/Desktop/wall.png)
+
+EXAMPLES
+  wallpapir
+  wallpapir black white radial
+  wallpapir "#ff6ec7" "#1a1a2e" linear 0.8 0.3
+  wallpapir black white radial 0.5 0.5 --output ~/Desktop/wall.png
+
+OUTPUT
+  Wallpapers are saved to ~/wallpapers/ by default.
+  After generating, you'll be asked if you want to set it as your desktop wallpaper.
+`);
+    process.exit(0);
+  }
+
   let color1 = argv[0];
   let color2 = argv[1];
   let type = argv[2] || 'linear';
