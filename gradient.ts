@@ -225,32 +225,47 @@ function getDisplayCount(): number {
  */
 async function promptAndSet(paths: string[]) {
   const plural = paths.length > 1;
-  process.stdout.write(`Should we set ${plural ? 'them' : 'it'}? (y/N) `);
-
-  for await (const line of console) {
-    if (line.trim().toLowerCase() === 'y') {
-      if (plural) {
-        for (let i = 0; i < paths.length; i++) {
-          Bun.spawnSync(['osascript', '-e',
-            `tell application "System Events" to set picture of desktop ${i + 1} to "${paths[i]}"`
-          ]);
-        }
-      } else {
+  const yes = await promptYN(`Should we set ${plural ? 'them' : 'it'}? (y/N) `);
+  if (yes) {
+    if (plural) {
+      for (let i = 0; i < paths.length; i++) {
         Bun.spawnSync(['osascript', '-e',
-          `tell application "System Events" to tell every desktop to set picture to "${paths[0]}"`
+          `tell application "System Events" to set picture of desktop ${i + 1} to "${paths[i]}"`
         ]);
       }
-      console.log(`🖥️  Wallpaper${plural ? 's' : ''} set!`);
+    } else {
+      Bun.spawnSync(['osascript', '-e',
+        `tell application "System Events" to tell every desktop to set picture to "${paths[0]}"`
+      ]);
     }
-    break;
+    console.log(`🖥️  Wallpaper${plural ? 's' : ''} set!`);
   }
 }
 
 /**
  * Main
  */
+async function promptYN(question: string): Promise<boolean> {
+  process.stdout.write(question);
+  for await (const line of console) {
+    return line.trim().toLowerCase() === 'y';
+  }
+  return false;
+}
+
 async function generate() {
-  const { color1, color2, type, paramX, paramY, outputPath, palette, multiMonitor } = parseArgs();
+  const args = parseArgs();
+  let { color1, color2, type, paramX, paramY, outputPath, palette } = args;
+  let multiMonitor = args.multiMonitor;
+
+  // Auto-detect multiple displays and offer multi-monitor mode
+  if (!multiMonitor) {
+    const count = getDisplayCount();
+    if (count > 1) {
+      multiMonitor = await promptYN(`${count} displays detected. Generate one wallpaper per display? (y/N) `);
+      console.log();
+    }
+  }
 
   if (multiMonitor) {
     const count = getDisplayCount();
