@@ -1,0 +1,13 @@
+{
+  "name": "wallpapir",
+  "version": "1.0.0",
+  "description": "Generate high-resolution gradient wallpapers",
+  "main": "gradient.ts",
+  "scripts": {
+    "start": "bun gradient.ts"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.50",
+    "chroma-js": "^2.4.2"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules
+/wallpapers
+*.log
+.DS_Store
