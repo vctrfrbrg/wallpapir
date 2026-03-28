@@ -12,7 +12,7 @@ class Wallpapir < Formula
     # Create wrapper script that calls bun
     (bin/"wallpapir").write <<~EOS
       #!/bin/bash
-      exec bun "#{libexec}/gradient.ts" "$@"
+      bun "#{libexec}/gradient.ts" "$@" 2> >(grep -v "registry.npmjs.org/@napi-rs" >&2)
     EOS
 
     (bin/"wallpapir").chmod 0755
