@@ -1,6 +1,6 @@
 # Wallpapir 🎨
 
-Generate beautiful, high-resolution gradient wallpapers (4K) from the command line using Bun. Perfect for MacBook Pro and other high-DPI displays.
+Generate beautiful 4K gradient wallpapers from the terminal. Supports curated palettes, multiple gradient styles, and multi-monitor setups.
 
 ## Installation
 
@@ -14,234 +14,140 @@ brew install wallpapir
 ### From source
 
 ```bash
-# Clone or navigate to the project
+git clone https://github.com/vctrfrbrg/wallpapir.git
 cd wallpapir
-
-# Install dependencies
 bun install
 ```
 
 ## Quick Start
 
 ```bash
-# Random wallpaper
+# Fully random wallpaper
 wallpapir
 
-# Radial gradient from darkgreen to black
-wallpapir darkgreen black radial
+# Use a curated palette
+wallpapir --palette nord
 
-# Linear gradient with custom parameters
-wallpapir purple gold linear 0.3 0.7
+# Specific colors and gradient type
+wallpapir black white radial
 
-# Conic gradient at center
-wallpapir "#ff6b9d" cyan conic 0.5 0.5
+# Multi-monitor: one wallpaper per display, same palette, different styles
+wallpapir --palette dracula --multi-monitor
 ```
+
+After generating, wallpapir will ask if you want to set the wallpaper. If multiple displays are connected, it will offer multi-monitor mode automatically.
 
 ## Syntax
 
 ```
-wallpapir [color1] [color2] [type] [paramX] [paramY] [--output path]
+wallpapir [color1] [color2] [type] [x] [y] [--output path] [--palette name] [--multi-monitor]
 ```
 
 ### Parameters
 
-| Parameter | Description | Default | Format |
-|-----------|-------------|---------|--------|
-| `color1` | Starting color | Random if omitted | Name (e.g., `black`, `gold`) or hex (e.g., `#ff6b9d`) |
-| `color2` | Ending color | Random if omitted | Name or hex |
-| `type` | Gradient style | `linear` | `linear`, `radial`, or `conic` |
-| `paramX` | X-coordinate/direction | Random if omitted | 0.0–1.0 (normalized) |
-| `paramY` | Y-coordinate/direction | Random if omitted | 0.0–1.0 (normalized) |
-| `--output path` | Custom output file | Auto-generated from params | Relative or absolute path |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `color1` | Start color — named (`black`) or hex (`#ff6b9d`) | Random |
+| `color2` | End color — same format | Random |
+| `type` | Gradient style: `linear`, `radial`, `conic` | `linear` |
+| `x`, `y` | Direction/center point as 0–1 fractions | Random |
+| `--output` | Custom output path | Auto-generated |
+| `--palette` | Curated color palette (see below) | — |
+| `--multi-monitor` | Generate one wallpaper per display | — |
+
+## Palettes
+
+Palettes pick two colors automatically from a curated set, so you always get a harmonious result.
+
+```bash
+wallpapir --palette nord
+wallpapir --palette dracula
+wallpapir --palette catppuccin
+```
+
+Palettes work with all other flags:
+
+```bash
+wallpapir --palette nord radial
+wallpapir --palette catppuccin --multi-monitor
+```
+
+## Multi-Monitor
+
+With `--multi-monitor`, wallpapir detects how many displays are connected and generates one wallpaper per display. Each display gets a different gradient style (linear, radial, conic) but uses the same palette for a cohesive look.
+
+```bash
+wallpapir --palette dracula --multi-monitor
+```
+
+When running plain `wallpapir` with multiple displays connected, you'll be asked automatically:
+
+```
+2 displays detected. Generate one wallpaper per display? (y/N)
+```
 
 ## Gradient Types
 
 ### Linear
-Direction-based gradient (diagonal or angled).
-- `paramX` and `paramY` determine the end point
-- Examples:
-  ```bash
-  bun gradient.ts blue orange linear 1.0 1.0   # Diagonal
-  bun gradient.ts red gold linear 0.5 0.5      # Gentle slope
-  ```
+Direction-based gradient. `x` and `y` define the end point.
+```bash
+wallpapir blue orange linear 1.0 1.0   # Diagonal
+wallpapir red gold linear 0.5 0.5      # Gentle slope
+```
 
 ### Radial
-Center-point gradient that expands outward.
-- `paramX` and `paramY` set the center position
-- Examples:
-  ```bash
-  bun gradient.ts darkgreen black radial 0.85 0.32   # Off-center radial
-  bun gradient.ts white navy radial 0.5 0.5          # Centered radial
-  ```
+Expands outward from a center point. `x` and `y` set the center.
+```bash
+wallpapir darkgreen black radial 0.85 0.32   # Off-center
+wallpapir white navy radial 0.5 0.5          # Centered
+```
 
 ### Conic
-Angular/polar gradient that sweeps around a point.
-- `paramX` and `paramY` set the center
-- Examples:
-  ```bash
-  bun gradient.ts purple gold conic 0.5 0.5    # Center conic
-  bun gradient.ts red cyan conic 0.7 0.3       # Off-center conic
-  ```
-
-## Output Files
-
-Wallpapers are saved to `./wallpapers/` with auto-generated names based on your parameters.
-
-### Default Naming
-Format: `{color1}-{color2}-{type}-{paramX*100}-{paramY*100}.png`
-
-Examples:
-```
-green-red-radial-85-32.png
-purple-gold-linear-30-70.png
-fef0e5-2a2a2a-linear-50-50.png
-```
-
-### Auto-Increment
-If you run the same command twice, the second file gets `(1)` appended:
-```
-green-red-radial-85-32.png
-green-red-radial-85-32 (1).png
-green-red-radial-85-32 (2).png
-```
-
-## Color Support
-
-### Named Colors
-Supports standard CSS/web colors:
+Sweeps angularly around a center point.
 ```bash
-bun gradient.ts black white linear
-bun gradient.ts red blue linear
-bun gradient.ts darkgreen navy linear
-bun gradient.ts purple gold linear
+wallpapir purple gold conic 0.5 0.5    # Centered
+wallpapir red cyan conic 0.7 0.3       # Off-center
 ```
 
-### Hex Colors
-Full 6-digit or 3-digit hex codes:
-```bash
-bun gradient.ts "#ff6b9d" "#00ffff" radial 0.5 0.5
-bun gradient.ts "#fef0e5" "#2a2a2a" linear 0.5 0.5
+## Output
+
+Wallpapers are saved to `~/wallpapers/` with auto-generated names:
+
+```
+nord-88c0d0-linear-72-45.png
+black-white-radial-50-50.png
 ```
 
-In `zsh`, wrap hex codes in quotes:
-```bash
-bun gradient.ts "#ff0000" "#0000ff" linear
+If the same filename already exists, it auto-increments:
+```
+black-white-radial-50-50.png
+black-white-radial-50-50 (1).png
 ```
 
-## Examples
-
-### Premium Beige-to-Charcoal (Subtle Linear)
+Use `--output` for a custom path:
 ```bash
-bun gradient.ts "#fef0e5" "#2a2a2a" linear 0.5 0.5
-```
-Output: `fef0e5-2a2a2a-linear-50-50.png`
-
-### Deep Space Radial (Dark Center)
-```bash
-bun gradient.ts navy black radial 0.5 0.5
-```
-Output: `navy-black-radial-50-50.png`
-
-### Candy Conic (Angular Rainbow)
-```bash
-bun gradient.ts pink cyan conic 0.5 0.5
-```
-Output: `pink-cyan-conic-50-50.png`
-
-### Diagonal Sunset
-```bash
-bun gradient.ts orange red linear 1.0 1.0
-```
-Output: `orange-red-linear-100-100.png`
-
-### Random Everything
-```bash
-bun gradient.ts
-```
-(All parameters randomized—different each run)
-
-## Custom Output
-
-Use `--output` to specify a custom path:
-```bash
-bun gradient.ts purple gold linear 0.3 0.7 --output wallpapers/my-custom-bg.png
-```
-
-Run again and it auto-increments:
-```bash
-# Second run of same command
-# Creates: wallpapers/my-custom-bg (1).png
+wallpapir --palette nord --output ~/Desktop/wall.png
 ```
 
 ## Technical Details
 
-- **Resolution:** 3840×2160 (4K, 16:9 aspect ratio)
+- **Resolution:** 3840×2160 (4K, 16:9)
 - **Format:** PNG
-- **Color Space:** LCh (perceptually uniform interpolation)
-- **Anti-Banding:** Subtle noise dithering to prevent color banding
-- **Runtime:** ~1-2 seconds per wallpaper
-
-## Directory Structure
-
-```
-wallpapir/
-├── gradient.ts           # Main script
-├── package.json          # Dependencies
-├── .gitignore            # Excludes wallpapers and node_modules
-├── README.md             # This file
-└── wallpapers/           # Generated wallpapers (not in git)
-    ├── green-red-radial-85-32.png
-    ├── purple-gold-linear-30-70.png
-    └── ...
-```
-
-## Tips & Tricks
-
-1. **Quick Radial Pulse Origin:** Center variations create organic feels
-   ```bash
-   bun gradient.ts navy white radial 0.6 0.4
-   bun gradient.ts navy white radial 0.4 0.6
-   ```
-
-2. **Diagonal Sweeps:** Use linear with extreme paramX/Y
-   ```bash
-   bun gradient.ts red blue linear 0.0 1.0   # Top-left to bottom-right
-   bun gradient.ts red blue linear 1.0 0.0   # Top-right to bottom-left
-   ```
-
-3. **All Files:** Check `wallpapers/` to browse your collection
-   ```bash
-   ls -lh wallpapers/ | head -20
-   ```
-
-4. **Batch Generation:** Create multiple variations
-   ```bash
-   bun gradient.ts darkgreen black radial
-   bun gradient.ts darkgreen black radial 0.85 0.32
-   bun gradient.ts darkgreen gold radial 0.5 0.5
-   ```
+- **Color interpolation:** LCh mode via Chroma.js (no muddy midpoints)
+- **Anti-banding:** Subtle noise dithering applied to every wallpaper
 
 ## Troubleshooting
 
-**"Error: Invalid color"**
-- Ensure color names are valid CSS colors or hex codes are properly quoted in zsh
-  ```bash
-  # ✅ Correct
-  bun gradient.ts "#ff0000" black linear
-  
-  # ❌ Wrong (# triggers shell comment)
-  bun gradient.ts #ff0000 black linear
-  ```
+**Hex colors not working**
+Wrap hex codes in quotes to prevent shell interpretation of `#`:
+```bash
+wallpapir "#ff0000" "#0000ff" linear   # correct
+wallpapir #ff0000 #0000ff linear       # wrong — # starts a comment
+```
 
-**Wallpapers not appearing**
-- Check `wallpapers/` directory: `ls -lh wallpapers/`
-- Ensure `wallpapers/` exists; script creates it automatically
-
-**Very slow generation**
-- 4K rendering is compute-intensive (~1-2s per wallpaper)
-- This is normal; Bun + Rust-backed canvas is optimized
+**Wallpaper not setting on macOS**
+Make sure wallpapir has permission to control System Events. If prompted, allow it in System Settings → Privacy & Security → Automation.
 
 ## License
 
 MIT
-

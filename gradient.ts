@@ -91,9 +91,10 @@ EXAMPLES
   wallpapir --palette nord
   wallpapir --palette dracula --multi-monitor
 
-OUTPUT
+NOTES
   Wallpapers are saved to ~/wallpapers/ by default.
   After generating, you'll be asked if you want to set it as your desktop wallpaper.
+  If multiple displays are connected, wallpapir will offer to generate one per display.
 `);
     process.exit(0);
   }
