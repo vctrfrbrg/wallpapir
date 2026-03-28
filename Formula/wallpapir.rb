@@ -14,7 +14,7 @@ class Wallpapir < Formula
       #!/bin/bash
       exec bun "#{libexec}/gradient.ts" "$@"
     EOS
-    
+
     (bin/"wallpapir").chmod 0755
   end
 
@@ -22,6 +22,6 @@ class Wallpapir < Formula
     # Simple functionality test
     output = shell_output("#{bin}/wallpapir --help 2>&1 || true")
     # As long as it doesn't crash fatally, it's working
-    assert output.length > 0 || true
+    assert !output.empty? || true
   end
 end
