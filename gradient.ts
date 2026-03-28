@@ -202,7 +202,26 @@ async function generate() {
   console.log(`🎨 Colors: ${c1} → ${c2}`);
   console.log(`📍 Center: (${paramX.toFixed(3)}, ${paramY.toFixed(3)})`);
   console.log(`💾 Saved: ${finalPath}`);
-  console.log(`📐 Resolution: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}\n`);
+  console.log(`📐 Resolution: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}`);
+  console.log(`🔗 file://${finalPath}\n`);
+
+  // Ask user if they want to set it as wallpaper
+  process.stdout.write('Should we set it? (y/N) ');
+  for await (const line of console) {
+    const answer = line.trim().toLowerCase();
+    if (answer === 'y') {
+      const proc = Bun.spawnSync([
+        'osascript', '-e',
+        `tell application "System Events" to tell every desktop to set picture to "${finalPath}"`
+      ]);
+      if (proc.exitCode === 0) {
+        console.log('🖥️  Wallpaper set!');
+      } else {
+        console.error('❌ Failed to set wallpaper.');
+      }
+    }
+    break;
+  }
 }
 
 // Run
