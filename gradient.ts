@@ -10,66 +10,86 @@ import * as path from 'path';
 const CANVAS_WIDTH = 3840;
 const CANVAS_HEIGHT = 2160;
 const OUTPUT_PATH = './wallpapers/wallpaper.png';
+const GRADIENT_TYPES = ['linear', 'radial', 'conic'];
+
+const PALETTES: Record<string, string[]> = {
+  nord: ['#2E3440', '#3B4252', '#81A1C1', '#88C0D0', '#8FBCBB', '#A3BE8C', '#B48EAD', '#BF616A', '#D08770', '#EBCB8B'],
+  dracula: ['#282A36', '#6272A4', '#8BE9FD', '#50FA7B', '#FFB86C', '#FF79C6', '#BD93F9', '#FF5555', '#F1FA8C'],
+  catppuccin: ['#1E1E2E', '#89B4FA', '#CBA6F7', '#F38BA8', '#FAB387', '#F9E2AF', '#A6E3A1', '#94E2D5', '#89DCEB'],
+};
 
 /**
  * Sanitize color name for filename (remove #, truncate long hex strings)
  */
 function sanitizeColorName(colorStr: string | undefined): string {
   if (!colorStr) return 'random';
-  
+
   let sanitized = colorStr
     .toLowerCase()
-    .replace(/^#/, '')           // Remove leading #
-    .replace(/[^a-z0-9]/g, '');   // Remove special characters
-  
-  // If it's a long hex code, truncate to 3-4 chars
+    .replace(/^#/, '')
+    .replace(/[^a-z0-9]/g, '');
+
   if (sanitized.length > 6) {
     sanitized = sanitized.substring(0, 6);
   }
-  
+
   return sanitized;
 }
 
 /**
  * Generate filename based on gradient parameters
- * Format: {color1}-{color2}-{type}-{paramX*100}-{paramY*100}.png
  */
-function generateFilenameFromParams(color1: string | undefined, color2: string | undefined, type: string, paramX: number, paramY: number): string {
+function generateFilenameFromParams(color1: string, color2: string, type: string, paramX: number, paramY: number): string {
   const c1 = sanitizeColorName(color1);
   const c2 = sanitizeColorName(color2);
   const x = Math.round(paramX * 100);
   const y = Math.round(paramY * 100);
-  
   return `${c1}-${c2}-${type}-${x}-${y}.png`;
 }
 
 /**
- * Parse CLI arguments: bun gradient.ts [color1] [color2] [type] [paramX] [paramY] [--output path]
- * Example: bun gradient.ts "#feefe" black radial 0.85 0.53
- *          bun gradient.ts darkgreen black radial
+ * Pick two distinct colors at random from a named palette
+ */
+function pickFromPalette(paletteName: string): [string, string] {
+  const colors = PALETTES[paletteName];
+  if (!colors) {
+    console.warn(`⚠️  Unknown palette "${paletteName}". Available: ${Object.keys(PALETTES).join(', ')}`);
+    return [chroma.random().hex(), chroma.random().hex()];
+  }
+  const i = Math.floor(Math.random() * colors.length);
+  let j = Math.floor(Math.random() * (colors.length - 1));
+  if (j >= i) j++;
+  return [colors[i], colors[j]];
+}
+
+/**
+ * Parse CLI arguments
  */
 function parseArgs() {
-  const argv = Bun.argv.slice(2); // Remove 'bun' and script name
+  const argv = Bun.argv.slice(2);
 
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(`
 wallpapir — Generate beautiful 4K gradient wallpapers from the terminal
 
 USAGE
-  wallpapir [color1] [color2] [type] [x] [y] [--output path]
+  wallpapir [color1] [color2] [type] [x] [y] [--output path] [--palette name] [--multi-monitor]
 
 ARGUMENTS
-  color1       Start color — named (e.g. black) or hex (e.g. #ff0000). Defaults to random.
-  color2       End color — same format. Defaults to random.
-  type         Gradient type: linear, radial, conic. Defaults to linear.
-  x, y         Direction/center as 0–1 fractions. Defaults to random.
-  --output     Custom output path (e.g. --output ~/Desktop/wall.png)
+  color1           Start color — named (e.g. black) or hex (e.g. #ff0000). Defaults to random.
+  color2           End color — same format. Defaults to random.
+  type             Gradient type: linear, radial, conic. Defaults to linear.
+  x, y             Direction/center as 0–1 fractions. Defaults to random.
+  --output         Custom output path (e.g. --output ~/Desktop/wall.png)
+  --palette        Use a curated palette: nord, dracula, catppuccin
+  --multi-monitor  Generate one wallpaper per display (same palette, different styles)
 
 EXAMPLES
   wallpapir
   wallpapir black white radial
   wallpapir "#ff6ec7" "#1a1a2e" linear 0.8 0.3
-  wallpapir black white radial 0.5 0.5 --output ~/Desktop/wall.png
+  wallpapir --palette nord
+  wallpapir --palette dracula --multi-monitor
 
 OUTPUT
   Wallpapers are saved to ~/wallpapers/ by default.
@@ -78,36 +98,41 @@ OUTPUT
     process.exit(0);
   }
 
-  let color1 = argv[0];
-  let color2 = argv[1];
-  let type = argv[2] || 'linear';
-  let paramX = argv[3] ? parseFloat(argv[3]) : Math.random();
-  let paramY = argv[4] ? parseFloat(argv[4]) : Math.random();
-  let outputPath = OUTPUT_PATH;
+  const paletteIdx = argv.indexOf('--palette');
+  const palette = paletteIdx !== -1 ? argv[paletteIdx + 1] : undefined;
+  const multiMonitor = argv.includes('--multi-monitor');
 
-  // Handle --output flag if present
+  // Filter out flags so positional args still work
+  const positional = argv.filter((a, i) =>
+    a !== '--multi-monitor' &&
+    a !== '--palette' && argv[i - 1] !== '--palette' &&
+    a !== '--output' && argv[i - 1] !== '--output'
+  );
+
+  const color1 = positional[0];
+  const color2 = positional[1];
+  const type = positional[2] || 'linear';
+  const paramX = positional[3] ? parseFloat(positional[3]) : Math.random();
+  const paramY = positional[4] ? parseFloat(positional[4]) : Math.random();
+
+  let outputPath = OUTPUT_PATH;
   const outputIdx = argv.indexOf('--output');
   if (outputIdx !== -1 && argv[outputIdx + 1]) {
     outputPath = argv[outputIdx + 1];
   } else {
-    // Generate filename based on parameters
-    const generatedName = generateFilenameFromParams(color1, color2, type, paramX, paramY);
+    const generatedName = generateFilenameFromParams(color1 ?? 'random', color2 ?? 'random', type, paramX, paramY);
     outputPath = path.join(path.dirname(OUTPUT_PATH), generatedName);
   }
-
-  // Resolve to absolute path
   outputPath = path.resolve(outputPath);
 
-  return { color1, color2, type, paramX, paramY, outputPath };
+  return { color1, color2, type, paramX, paramY, outputPath, palette, multiMonitor };
 }
 
 /**
  * Validate and normalize a color string
- * Supports named colors (black, red, etc), hex (#fff, #ffffff), or random
  */
 function validateColor(colorStr: string | undefined): string {
   if (!colorStr) return chroma.random().hex();
-  
   try {
     return chroma(colorStr).hex();
   } catch (e) {
@@ -118,136 +143,153 @@ function validateColor(colorStr: string | undefined): string {
 
 /**
  * Add subtle noise to prevent banding in gradients
- * (Makes the wallpaper look more "premium" and less posterized)
  */
 function addNoise(ctx: any, width: number, height: number, intensity: number = 8) {
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
-
   for (let i = 0; i < data.length; i += 4) {
     const noise = (Math.random() - 0.5) * intensity;
-    data[i] = Math.max(0, Math.min(255, data[i] + noise));     // R
-    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise)); // G
-    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise)); // B
-    // data[i + 3] is alpha, leave unchanged
+    data[i] = Math.max(0, Math.min(255, data[i] + noise));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
   }
-
   ctx.putImageData(imageData, 0, 0);
 }
 
 /**
  * Generate a unique filename by appending (N) if file exists
- * e.g., wallpaper.png → wallpaper (1).png → wallpaper (2).png
  */
 function generateUniqueFilename(basePath: string): string {
-  // Check if the base file exists
-  if (!fs.existsSync(basePath)) {
-    return basePath;
-  }
-
-  // Parse filename and extension using path module
+  if (!fs.existsSync(basePath)) return basePath;
   const dir = path.dirname(basePath);
   const ext = path.extname(basePath);
   const basename = path.basename(basePath, ext);
-
-  // Find the next available number
   let counter = 1;
   let newPath: string;
   while (true) {
     newPath = path.join(dir, `${basename} (${counter})${ext}`);
-    if (!fs.existsSync(newPath)) {
-      return newPath;
-    }
+    if (!fs.existsSync(newPath)) return newPath;
     counter++;
   }
 }
 
 /**
- * Main function: Generate wallpaper with gradient
+ * Render and save a single wallpaper, returning the final path
  */
-async function generate() {
-  const { color1, color2, type, paramX, paramY, outputPath } = parseArgs();
-
-  // Validate colors
-  const c1 = validateColor(color1);
-  const c2 = validateColor(color2);
-
-  // Ensure wallpapers directory exists
+async function renderWallpaper(c1: string, c2: string, type: string, paramX: number, paramY: number, outputPath: string): Promise<string> {
   const dir = path.dirname(outputPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  // Create canvas
   const canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
   const ctx = canvas.getContext('2d');
 
-  // Create gradient with Canvas API
   let gradient;
-
   if (type === 'radial') {
     const centerX = paramX * CANVAS_WIDTH;
     const centerY = paramY * CANVAS_HEIGHT;
     const radius = Math.max(CANVAS_WIDTH, CANVAS_HEIGHT);
-    gradient = ctx.createRadialGradient(
-      centerX, centerY, 0,
-      centerX, centerY, radius
-    );
+    gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
   } else if (type === 'conic') {
-    const centerX = paramX * CANVAS_WIDTH;
-    const centerY = paramY * CANVAS_HEIGHT;
-    gradient = ctx.createConicGradient(0, centerX, centerY);
+    gradient = ctx.createConicGradient(0, paramX * CANVAS_WIDTH, paramY * CANVAS_HEIGHT);
   } else {
-    // Default: linear gradient using paramX, paramY as direction
     gradient = ctx.createLinearGradient(0, 0, paramX * CANVAS_WIDTH, paramY * CANVAS_HEIGHT);
   }
 
-  // Pro-level color interpolation using Chroma.js in LCh mode
-  // This prevents muddy middle colors that RGB interpolation causes
   const scale = chroma.scale([c1, c2]).mode('lch');
-
   gradient.addColorStop(0, scale(0).hex());
-  gradient.addColorStop(0.5, scale(0.5).hex()); // Midpoint for smoothness
+  gradient.addColorStop(0.5, scale(0.5).hex());
   gradient.addColorStop(1, scale(1).hex());
 
-  // Fill the canvas
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // Add noise to prevent banding (dithering effect)
   addNoise(ctx, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // Generate unique filename (auto-increment if exists)
   const finalPath = generateUniqueFilename(outputPath);
-
-  // Save to PNG using Bun's ultra-fast I/O
   const buffer = await canvas.encode('png');
   await Bun.write(finalPath, buffer);
 
-  // Print results
-  console.log(`\n✅ Generated: ${type} wallpaper`);
-  console.log(`🎨 Colors: ${c1} → ${c2}`);
-  console.log(`📍 Center: (${paramX.toFixed(3)}, ${paramY.toFixed(3)})`);
-  console.log(`💾 Saved: ${finalPath}`);
-  console.log(`📐 Resolution: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}`);
-  console.log(`🔗 file://${finalPath}\n`);
+  return finalPath;
+}
 
-  // Ask user if they want to set it as wallpaper
-  process.stdout.write('Should we set it? (y/N) ');
+/**
+ * Get the number of connected displays via osascript
+ */
+function getDisplayCount(): number {
+  const proc = Bun.spawnSync(['osascript', '-e', 'tell application "System Events" to return count of desktops']);
+  const n = parseInt(proc.stdout.toString().trim());
+  return isNaN(n) ? 1 : n;
+}
+
+/**
+ * Prompt the user and optionally set wallpapers on each display
+ */
+async function promptAndSet(paths: string[]) {
+  const plural = paths.length > 1;
+  process.stdout.write(`Should we set ${plural ? 'them' : 'it'}? (y/N) `);
+
   for await (const line of console) {
-    const answer = line.trim().toLowerCase();
-    if (answer === 'y') {
-      const proc = Bun.spawnSync([
-        'osascript', '-e',
-        `tell application "System Events" to tell every desktop to set picture to "${finalPath}"`
-      ]);
-      if (proc.exitCode === 0) {
-        console.log('🖥️  Wallpaper set!');
+    if (line.trim().toLowerCase() === 'y') {
+      if (plural) {
+        for (let i = 0; i < paths.length; i++) {
+          Bun.spawnSync(['osascript', '-e',
+            `tell application "System Events" to set picture of desktop ${i + 1} to "${paths[i]}"`
+          ]);
+        }
       } else {
-        console.error('❌ Failed to set wallpaper.');
+        Bun.spawnSync(['osascript', '-e',
+          `tell application "System Events" to tell every desktop to set picture to "${paths[0]}"`
+        ]);
       }
+      console.log(`🖥️  Wallpaper${plural ? 's' : ''} set!`);
     }
     break;
+  }
+}
+
+/**
+ * Main
+ */
+async function generate() {
+  const { color1, color2, type, paramX, paramY, outputPath, palette, multiMonitor } = parseArgs();
+
+  if (multiMonitor) {
+    const count = getDisplayCount();
+    const results: { type: string; c1: string; c2: string; finalPath: string }[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const [c1, c2] = palette ? pickFromPalette(palette) : [validateColor(undefined), validateColor(undefined)];
+      const gradientType = GRADIENT_TYPES[i % GRADIENT_TYPES.length];
+      const px = Math.random();
+      const py = Math.random();
+      const filename = generateFilenameFromParams(c1, c2, gradientType, px, py);
+      const wallpaperPath = path.resolve(path.join(path.dirname(OUTPUT_PATH), filename));
+      const finalPath = await renderWallpaper(c1, c2, gradientType, px, py, wallpaperPath);
+      results.push({ type: gradientType, c1, c2, finalPath });
+    }
+
+    console.log();
+    for (let i = 0; i < results.length; i++) {
+      const { type: t, c1, c2, finalPath } = results[i];
+      console.log(`🖥️  Display ${i + 1} — ${t}`);
+      console.log(`   🎨 ${c1} → ${c2}`);
+      console.log(`   🔗 file://${finalPath}`);
+    }
+    console.log(`\n📐 Resolution: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}\n`);
+
+    await promptAndSet(results.map(r => r.finalPath));
+
+  } else {
+    const [c1, c2] = palette ? pickFromPalette(palette) : [validateColor(color1), validateColor(color2)];
+    const finalPath = await renderWallpaper(c1, c2, type, paramX, paramY, outputPath);
+
+    console.log(`\n✅ Generated: ${type} wallpaper`);
+    console.log(`🎨 Colors: ${c1} → ${c2}`);
+    console.log(`📍 Center: (${paramX.toFixed(3)}, ${paramY.toFixed(3)})`);
+    console.log(`💾 Saved: ${finalPath}`);
+    console.log(`📐 Resolution: ${CANVAS_WIDTH}×${CANVAS_HEIGHT}`);
+    console.log(`🔗 file://${finalPath}\n`);
+
+    await promptAndSet([finalPath]);
   }
 }
 
