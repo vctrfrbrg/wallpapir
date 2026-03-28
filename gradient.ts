@@ -12,6 +12,38 @@ const CANVAS_HEIGHT = 2160;
 const OUTPUT_PATH = './wallpapers/wallpaper.png';
 
 /**
+ * Sanitize color name for filename (remove #, truncate long hex strings)
+ */
+function sanitizeColorName(colorStr: string | undefined): string {
+  if (!colorStr) return 'random';
+  
+  let sanitized = colorStr
+    .toLowerCase()
+    .replace(/^#/, '')           // Remove leading #
+    .replace(/[^a-z0-9]/g, '');   // Remove special characters
+  
+  // If it's a long hex code, truncate to 3-4 chars
+  if (sanitized.length > 6) {
+    sanitized = sanitized.substring(0, 6);
+  }
+  
+  return sanitized;
+}
+
+/**
+ * Generate filename based on gradient parameters
+ * Format: {color1}-{color2}-{type}-{paramX*100}-{paramY*100}.png
+ */
+function generateFilenameFromParams(color1: string | undefined, color2: string | undefined, type: string, paramX: number, paramY: number): string {
+  const c1 = sanitizeColorName(color1);
+  const c2 = sanitizeColorName(color2);
+  const x = Math.round(paramX * 100);
+  const y = Math.round(paramY * 100);
+  
+  return `${c1}-${c2}-${type}-${x}-${y}.png`;
+}
+
+/**
  * Parse CLI arguments: bun gradient.ts [color1] [color2] [type] [paramX] [paramY] [--output path]
  * Example: bun gradient.ts "#feefe" black radial 0.85 0.53
  *          bun gradient.ts darkgreen black radial
@@ -30,6 +62,10 @@ function parseArgs() {
   const outputIdx = argv.indexOf('--output');
   if (outputIdx !== -1 && argv[outputIdx + 1]) {
     outputPath = argv[outputIdx + 1];
+  } else {
+    // Generate filename based on parameters
+    const generatedName = generateFilenameFromParams(color1, color2, type, paramX, paramY);
+    outputPath = path.join(path.dirname(OUTPUT_PATH), generatedName);
   }
 
   // Resolve to absolute path
