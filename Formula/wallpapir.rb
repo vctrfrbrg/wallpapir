@@ -1,8 +1,8 @@
 class Wallpapir < Formula
   desc "Generate beautiful 4K gradient wallpapers from the terminal"
   homepage "https://github.com/vctrfrbrg/wallpapir"
-  url "https://github.com/vctrfrbrg/wallpapir/archive/refs/tags/v1.0.5.tar.gz"
-  sha256 "287b5b4795a5b3c57d33984d0cb30967b65253c6eb2f48abae2e973f072be5f3"
+  url "https://github.com/vctrfrbrg/wallpapir/archive/refs/tags/v1.0.6.tar.gz"
+  sha256 "fad091359249780b69f2a1f9a2821a963a74f6ff078f3100befd971ee1fdf52a"
   license "MIT"
 
   depends_on "oven-sh/bun/bun" => :runtime
