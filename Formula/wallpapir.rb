@@ -1,8 +1,8 @@
 class Wallpapir < Formula
   desc "Generate beautiful 4K gradient wallpapers from the terminal"
   homepage "https://github.com/vctrfrbrg/wallpapir"
-  url "https://github.com/vctrfrbrg/wallpapir/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "5a8a835e7a13b23c0a55cbeef7dd3f91c4f426995e7005c1925ae8179f4508bb"
+  url "https://github.com/vctrfrbrg/wallpapir/archive/refs/tags/v1.0.1.tar.gz"
+  sha256 "00e6b192a6abaf62790cddcc12d15cb6eb6ebb88bdf6694c5d9f94b5a31fae86"
   license "MIT"
 
   def install
