@@ -4,6 +4,15 @@ Generate beautiful, high-resolution gradient wallpapers (4K) from the command li
 
 ## Installation
 
+### Homebrew (recommended)
+
+```bash
+brew tap vctrfrbrg/wallpapir
+brew install wallpapir
+```
+
+### From source
+
 ```bash
 # Clone or navigate to the project
 cd wallpapir
@@ -15,20 +24,23 @@ bun install
 ## Quick Start
 
 ```bash
-# Generate a simple radial gradient from darkgreen to black
-bun gradient.ts darkgreen black radial
+# Random wallpaper
+wallpapir
 
-# Generate a linear gradient with custom parameters
-bun gradient.ts purple gold linear 0.3 0.7
+# Radial gradient from darkgreen to black
+wallpapir darkgreen black radial
 
-# Generate a conic (angular) gradient at center
-bun gradient.ts "#ff6b9d" cyan conic 0.5 0.5
+# Linear gradient with custom parameters
+wallpapir purple gold linear 0.3 0.7
+
+# Conic gradient at center
+wallpapir "#ff6b9d" cyan conic 0.5 0.5
 ```
 
 ## Syntax
 
 ```
-bun gradient.ts [color1] [color2] [type] [paramX] [paramY] [--output path]
+wallpapir [color1] [color2] [type] [paramX] [paramY] [--output path]
 ```
 
 ### Parameters
